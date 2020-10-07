@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/doniacld/notifier/notifier"
@@ -27,24 +29,26 @@ func main() {
 		panic("url is empty")
 	}
 	interval := flag.String(intervalShortFlag, intervalDefault, "Notification interval")
-	fmt.Println(*interval)
 	flag.Parse()
 
-	// convert interval into a int
-	intervalInt := 5
+	// convert interval into a duration format
+	intervalDuration, err := time.ParseDuration(*interval)
+	if err != nil {
+		panic("interval has not a valid format")
+	}
 
-	// TODO DONIA
-	// retrieve the message
-	message := "coucou toi!"
-
-	// enter the loop
-	sender(*url, intervalInt, message)
+	// Parse stdin and sends the messages
+	sender(*url, intervalDuration)
 }
 
 // sender sends the provided message at the given internal
-func sender(url string, interval int, message string) {
+func sender(url string, interval time.Duration) {
 	for {
-		time.Sleep(time.Duration(interval) * time.Second)
-		go notifier.Notify(url, message)
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			time.Sleep(interval)
+			message := scanner.Text()
+			go notifier.Notify(url, message)
+		}
 	}
 }
