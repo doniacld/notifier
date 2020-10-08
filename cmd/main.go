@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/doniacld/notifier/notifier"
@@ -32,23 +33,17 @@ func main() {
 	flag.Parse()
 
 	// convert interval into a duration format
-	intervalDuration, err := time.ParseDuration(*interval)
+	_, err := time.ParseDuration(*interval)
 	if err != nil {
 		panic("interval has not a valid format")
 	}
+	wg := sync.WaitGroup{}
 
-	// Parse stdin and sends the messages
-	sender(*url, intervalDuration)
-}
-
-// sender sends the provided message at the given internal
-func sender(url string, interval time.Duration) {
-	for {
-		scanner := bufio.NewScanner(os.Stdin)
-		for scanner.Scan() {
-			time.Sleep(interval)
-			message := scanner.Text()
-			go notifier.Notify(url, message)
-		}
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		message := scanner.Text()
+		wg.Add(1)
+		go notifier.Notify(*url, message)
 	}
+	wg.Wait()
 }
