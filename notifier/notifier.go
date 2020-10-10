@@ -11,9 +11,16 @@ import (
 
 // Notify notifies that a message arrives by sending this message to the given URL
 // TODO DONIA should manage a lot of requests at the same time
-func Notify(url string, message string) error {
+func Notify(url string, msgsQueue chan string) error {
 	// send a request to the given URL
-	_ = httptest.NewRequest(http.MethodPost, url, strings.NewReader(message))
-	fmt.Println(message)
+	for i := 0; i < 5; i++ {
+		go worker(url, msgsQueue)
+	}
 	return nil
+}
+
+func worker(url string, msgsQueue chan string) {
+	msg := <-msgsQueue
+	_ = httptest.NewRequest(http.MethodPost, url, strings.NewReader(msg))
+	fmt.Println(msg)
 }
